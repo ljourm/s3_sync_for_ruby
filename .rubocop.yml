@@ -1,0 +1,30 @@
+require:
+  - rubocop-performance
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 2.7.4
+  Exclude:
+    - vendor/bundle/**/*
+    - config/**/*
+  NewCops: enable
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+Style/Documentation:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/AsciiComments:
+  Enabled: false
+
+Metrics/BlockLength:
+  IgnoredMethods:
+    - describe
+    - context
