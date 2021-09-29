@@ -18,9 +18,12 @@ class S3ToLocalSync
     s3_files.each do |filepath, timestamp|
       if local_files.key?(filepath)
         # ローカルに存在する場合
-        if timestamp > local_files[filepath]
-          # S3がローカルより新しい場合
-          s3_to_local(filepath, local_path, filepath)
+        unless dir?(filepath)
+          # ファイルの場合
+          if timestamp > local_files[filepath]
+            # S3がローカルより新しい場合
+            s3_to_local(filepath, local_path, filepath)
+          end
         end
       else
         # ローカルに存在しない場合
