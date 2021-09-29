@@ -6,7 +6,7 @@ class S3Object
     @bucket_name = bucket_name
     @base_path = base_path
 
-    @base_path += '/' if @base_path.length != 0 && @base_path[-1] != '/'
+    @base_path += '/' if !@base_path.empty? && @base_path[-1] != '/'
   end
 
   def filepath_and_timestamps
@@ -25,18 +25,19 @@ class S3Object
     @filepath_and_timestamps
   end
 
-private
+  private
 
   # 戻り値: Array[Class: Aws::S3::Types::Object]
   # see: https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/Types/Object.html
   # ファイルパス(Object#key)順にソートされた状態で返却される
   def s3_objects
     # see: https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/Client.html#list_objects_v2-instance_method
-    @client.list_objects_v2({
+    params = {
       bucket: @bucket_name,
       encoding_type: 'url',
       prefix: @base_path,
-    })[:contents]
+    }
+    @client.list_objects_v2(params)[:contents]
   end
 end
 

@@ -14,7 +14,7 @@ class LocalFile
     end
   end
 
-private
+  private
 
   def local_filepaths
     # delete_ifの処理: 現在のディレクトリを表す'.' (e.g. 'hoge/.') が含まれてしまうため削除している
