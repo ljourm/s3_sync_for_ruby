@@ -6,10 +6,13 @@ class LocalFile
   end
 
   def filepath_and_timestamps
-    @filepath_and_timestamp ||= local_filepaths.to_h do |name|
+    @filepath_and_timestamps ||= local_filepaths.to_h do |name|
       [
         name,
-        File::Stat.new("#{@base_path}/#{name}").mtime,
+        {
+          actual_path: "#{@base_path}/#{name}",
+          timestamp: File::Stat.new("#{@base_path}/#{name}").mtime,
+        },
       ]
     end
   end
@@ -31,14 +34,7 @@ class LocalFile
 end
 
 if __FILE__ == $PROGRAM_NAME
-  ENV['AWS_ACCESS_KEY_ID'] = ''
-  ENV['AWS_SECRET_ACCESS_KEY'] = ''
-  ENV['AWS_DEFAULT_REGION'] = 'ap-northeast-1'
-
   pp LocalFile.new(
-    'local_dir',
+    '../local_base/test',
   ).filepath_and_timestamps
-  # => {"hoge"=>2021-09-28 15:57:32.3471809 +0000,
-  #     "fuga/"=>2021-09-28 15:43:43.0868873 +0000,
-  #     "fuga/piyo.txt"=>2021-09-28 16:20:14.0830284 +0000,
 end

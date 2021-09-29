@@ -1,31 +1,45 @@
 require 'aws-sdk-s3'
 
 class S3Object
+  EXCLUSION_PATH = ['/', ''].freeze
+
   def initialize(client, bucket_name, base_path = '')
     @client = client
     @bucket_name = bucket_name
     @base_path = base_path
 
-    @base_path += '/' if !@base_path.empty? && @base_path[-1] != '/'
+    if !@base_path.empty? && @base_path[-1] != '/'
+      @base_path += '/'
+    elsif @base_path == '/'
+      @base_path = ''
+    end
   end
 
   def filepath_and_timestamps
     return @filepath_and_timestamps if @filepath_and_timestamps
 
-    @filepath_and_timestamps = s3_objects.to_h do |object|
-      [
-        object.key[@base_path.length..],
-        object.last_modified,
-      ]
-    end.compact
-
-    @filepath_and_timestamps.delete('/')
-    @filepath_and_timestamps.delete('')
+    create
 
     @filepath_and_timestamps
   end
 
   private
+
+  def create
+    @filepath_and_timestamps = {}
+
+    s3_objects.each do |object|
+      filepath = key_path(object.key)
+
+      next if EXCLUSION_PATH.include?(filepath)
+
+      dirpaths(filepath).each do |dirpath|
+        store(dirpath, object) unless @filepath_and_timestamps.key?(dirpath)
+      end
+
+      store(filepath, object)
+    end
+  end
 
   # 戻り値: Array[Class: Aws::S3::Types::Object]
   # see: https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/Types/Object.html
@@ -34,10 +48,28 @@ class S3Object
     # see: https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/Client.html#list_objects_v2-instance_method
     params = {
       bucket: @bucket_name,
-      encoding_type: 'url',
       prefix: @base_path,
     }
     @client.list_objects_v2(params)[:contents]
+  end
+
+  def key_path(path)
+    path[@base_path.length..]
+  end
+
+  def dirpaths(filepath)
+    dirpath = ''
+
+    filepath.split('/')[0...-1].map do |dir|
+      dirpath += "#{dir}/"
+    end
+  end
+
+  def store(key, object)
+    @filepath_and_timestamps[key] = {
+      actual_path: object.key,
+      timestamp: object.last_modified,
+    }
   end
 end
 
@@ -48,10 +80,7 @@ if __FILE__ == $PROGRAM_NAME
 
   pp S3Object.new(
     Aws::S3::Client.new,
-    'bucket_name',
+    's3-sync-target',
     '',
   ).filepath_and_timestamps
-  # => {"hoge"=>2021-08-12 22:45:43 UTC,
-  #     "fuga/=>2021-08-24 06:32:10 UTC,
-  #     "fuga/piyo.txt"=>2021-08-14 13:42:50 UTC}
 end
