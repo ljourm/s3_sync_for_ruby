@@ -88,7 +88,7 @@ private
 
   def make_dir(base_path, filepath)
     path = "#{base_path}/#{filepath}"
-    logger.info("mkdir: #{path}")
+    logger.info("make dir: #{path}")
 
     return if @dry_run
 
