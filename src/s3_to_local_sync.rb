@@ -3,9 +3,10 @@ require './s3_object'
 require './local_file'
 
 class S3ToLocalSync
-  def initialize(bucket_name, dry_run: false, file_mode: 0666)
+  def initialize(bucket_name, dry_run: false, force: false, file_mode: 0666)
     @bucket_name = bucket_name
     @dry_run = dry_run
+    @force = force
     @file_mode = file_mode
 
     logger.info('dry run is enabled') if @dry_run
@@ -20,8 +21,8 @@ class S3ToLocalSync
         # ローカルに存在する場合
         unless dir?(filepath)
           # ファイルの場合
-          if timestamp > local_files[filepath]
-            # S3がローカルより新しい場合
+          if @force || timestamp > local_files[filepath]
+            # 全転送モード または S3がローカルより新しい場合
             s3_to_local(filepath, local_path, filepath)
           end
         end
