@@ -25,32 +25,39 @@ class S3Object
 
   private
 
-  def create
+  def create # rubocop:disable Metrics/MethodLength
     @filepath_and_timestamps = {}
+    continuation_token = nil
 
-    s3_objects.each do |object|
-      filepath = key_path(object.key)
+    begin
+      objects, continuation_token = s3_objects_and_next_token(continuation_token)
 
-      next if EXCLUSION_PATH.include?(filepath)
+      objects.each do |object|
+        filepath = key_path(object.key)
 
-      dirpaths(filepath).each do |dirpath|
-        store(dirpath, object) unless @filepath_and_timestamps.key?(dirpath)
+        next if EXCLUSION_PATH.include?(filepath)
+
+        dirpaths(filepath).each do |dirpath|
+          store(dirpath, object) unless @filepath_and_timestamps.key?(dirpath)
+        end
+
+        store(filepath, object)
       end
-
-      store(filepath, object)
-    end
+    end while continuation_token # rubocop:disable Lint/Loop
   end
 
-  # 戻り値: Array[Class: Aws::S3::Types::Object]
   # see: https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/Types/Object.html
   # ファイルパス(Object#key)順にソートされた状態で返却される
-  def s3_objects
+  def s3_objects_and_next_token(continuation_token)
     # see: https://docs.aws.amazon.com/sdk-for-ruby/v3/api/Aws/S3/Client.html#list_objects_v2-instance_method
     params = {
       bucket: @bucket_name,
       prefix: @base_path,
+      continuation_token: continuation_token,
     }
-    @client.list_objects_v2(params)[:contents]
+    res = @client.list_objects_v2(params)
+
+    [res.contents, res.next_continuation_token]
   end
 
   def key_path(path)
